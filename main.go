@@ -18,6 +18,8 @@ import (
 
 	"time"
 
+	"io"
+
 	"github.com/everdev/mack"
 	"github.com/skratchdot/open-golang/open"
 )
@@ -41,12 +43,23 @@ func main() {
 	// create paths
 	homePath := filepath.Join(userHome, ".simplewebwatcher")
 	configPath := filepath.Join(homePath, "config")
+	logPath := filepath.Join(homePath, "log")
 
 	// create application home directory, if not exists
 	handleFatalError(os.MkdirAll(homePath, 0700))
 
 	// chdir to the application home path
 	handleFatalError(os.Chdir(homePath))
+
+	{
+		logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0700)
+		if err != nil {
+			log.Fatal("error opening file:", err)
+		}
+		defer logFile.Close()
+
+		log.SetOutput(io.MultiWriter(logFile, os.Stdout))
+	}
 
 	// check if Working Directory is valid
 	{
@@ -65,9 +78,8 @@ func main() {
 			log.Println("config not found, creating new default config at", configPath)
 
 			configFile, err := os.Create(configPath)
-			defer configFile.Close()
-
 			handleFatalError(err)
+			defer configFile.Close()
 
 			handleFatalError(config.WriteConfig(config.NewDefaultConfig(), configFile))
 
@@ -84,8 +96,8 @@ func main() {
 	{
 		log.Println("reading config from", configPath)
 		configFile, err := os.Open(configPath)
-		defer configFile.Close()
 		handleFatalError(err)
+		defer configFile.Close()
 
 		configBytes, err := ioutil.ReadAll(configFile)
 
@@ -152,11 +164,25 @@ func doCheck(safeConfig *config.ThreadSafeConfigWrapper, pos int, wg *sync.WaitG
 
 	// execute request
 	resp, err := webClient.Do(req)
-	defer resp.Body.Close()
 	if err != nil {
 		log.Println(err)
+
+		moptions := mack.AlertOptions{
+			Title:         "CIS Notifier",
+			Message:       "Site Error for " + siteConfig.Description + ": " + err.Error(),
+			Style:         "informational",
+			Buttons:       "Open",
+			DefaultButton: "Open",
+			Duration:      0,
+		}
+		if _, err = mack.AlertBox(moptions); err != nil {
+			log.Println(err)
+			return
+		}
+
 		return
 	}
+	defer resp.Body.Close()
 
 	// read body and determine size
 	body, err := ioutil.ReadAll(resp.Body)
