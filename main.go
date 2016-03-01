@@ -20,13 +20,43 @@ import (
 
 	"io"
 
+	"github.com/codegangsta/cli"
 	"github.com/everdev/mack"
 	"github.com/skratchdot/open-golang/open"
 )
 
 func main() {
+	app := cli.NewApp()
+	app.Name = "simplewebwatcher"
+	app.Usage = "adsf"
+	app.Version = "0.0.1"
 
-	// set max procs to cpu count
+	// flags TODO: Allow user to specify config location - what about the application directory?
+	//app.Flags = []cli.Flag{
+	//	cli.StringFlag{
+	//		Name:  "config, c",
+	//		Value: "",
+	//	},
+	//}
+
+	// commands TODO: add daemon mode?
+	app.Commands = []cli.Command{
+		{
+			// mode to use for cronjobs
+			Name:  "cron",
+			Usage: "query all pages once, then quit",
+			Action: func(c *cli.Context) {
+				log.Println(start())
+			},
+		},
+	}
+
+	app.Run(os.Args)
+}
+
+func start() error {
+
+	// set max procs to cpu count though only needed for go versions < 1.5
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// determine home directory
@@ -46,10 +76,14 @@ func main() {
 	logPath := filepath.Join(homePath, "log")
 
 	// create application home directory, if not exists
-	handleFatalError(os.MkdirAll(homePath, 0700))
+	if err := os.MkdirAll(homePath, 0700); err != nil {
+		return err
+	}
 
 	// chdir to the application home path
-	handleFatalError(os.Chdir(homePath))
+	if err := os.Chdir(homePath); err != nil {
+		return err
+	}
 
 	{
 		logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0700)
@@ -64,9 +98,15 @@ func main() {
 	// check if Working Directory is valid
 	{
 		cwd, err := os.Getwd()
-		handleFatalError(err)
+
+		if err != nil {
+			return err
+		}
+
 		if cwd != homePath {
-			handleFatalError(errors.New("wrong pwd"))
+			if err := errors.New("wrong pwd"); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -78,14 +118,19 @@ func main() {
 			log.Println("config not found, creating new default config at", configPath)
 
 			configFile, err := os.Create(configPath)
-			handleFatalError(err)
+			if err != nil {
+				return err
+			}
+
 			defer configFile.Close()
 
-			handleFatalError(config.WriteConfig(config.NewDefaultConfig(), configFile))
+			if err := config.WriteConfig(config.NewDefaultConfig(), configFile); err != nil {
+				return err
+			}
 
 			log.Println("default config created - please edit")
 
-			return
+			return nil
 		}
 	}
 
@@ -96,16 +141,24 @@ func main() {
 	{
 		log.Println("reading config from", configPath)
 		configFile, err := os.Open(configPath)
-		handleFatalError(err)
+
+		if err != nil {
+			return err
+		}
+
 		defer configFile.Close()
 
 		configBytes, err := ioutil.ReadAll(configFile)
 
-		handleFatalError(err)
+		if err != nil {
+			return err
+		}
 
 		tmpConfig, err := config.ReadConfig(string(configBytes))
 
-		handleFatalError(err)
+		if err != nil {
+			return err
+		}
 
 		// create and initialize new threadsafeconfig
 		safeConfig = new(config.ThreadSafeConfigWrapper)
@@ -129,15 +182,21 @@ func main() {
 
 		configFile, err := os.OpenFile(configPath, os.O_RDWR, 0700)
 		defer configFile.Close()
-		handleFatalError(err)
+		if err != nil {
+			return err
+		}
 
 		newConf := safeConfig.Get()
 
 		log.Println("updating config file")
 
-		handleFatalError(config.WriteConfig(&newConf, configFile))
+		if err := config.WriteConfig(&newConf, configFile); err != nil {
+			return err
+		}
 
 	}
+
+	return nil
 
 }
 
@@ -235,11 +294,5 @@ func doCheck(safeConfig *config.ThreadSafeConfigWrapper, pos int, wg *sync.WaitG
 	} else {
 		// announce mismatch
 		log.Println(siteConfig.Description, " | ", siteConfig.LastBytes, "->", size, " | ", siteConfig.LastHash, "->", hash, " | ", "no change detected")
-	}
-}
-
-func handleFatalError(err error) {
-	if err != nil {
-		log.Fatalln("FATAL ERROR:", err)
 	}
 }

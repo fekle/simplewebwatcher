@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <!-- label -->
+        <key>Label</key>
+        <string>simplewebwatcher</string>
+
+        <!-- program arguments -->
+        <key>ProgramArguments</key>
+        <array>
+            <string><!-- absolute path to simplewebwatcher binary --></string>
+            <string>cron</string>
+        </array>
+
+        <!-- set to true to run at boot -->
+        <key>RunAtLoad</key>
+        <true/>
+
+        <!-- time in seconds between runs -->
+        <key>StartInterval</key>
+        <integer>3600</integer>
+
+        <!-- set to true to run at every mount -->
+        <key>StartOnMount</key>
+        <false/>
+    </dict>
+</plist>
