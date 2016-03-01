@@ -15,7 +15,7 @@ Running `simplewebwatcher` for the first time creates the neccessary folder (`~/
 
 Currently, `simplewebwatcher` only has one mode, which fetches all configured sites, compares their sizes and hashes to the data stored in the configuration. On a mismatch, simplewebwatcher logs the occurence and alerts the user, before updating the configuration with the new data.
 
-As the nameimplies, this mode is designed for use with cronjobs and other schedulers.
+As the name implies, this mode is designed for use with cronjobs and other schedulers.
 
 ## launchd (OSX)
 Edit `scripts/simplewebwatcher.plist`, copy the file to `~/Library/LaunchAgents/simplewebwatcher.plist`.
