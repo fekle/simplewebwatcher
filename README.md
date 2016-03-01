@@ -3,7 +3,7 @@
 ## Installation
 ```bash
 go get github.com/fekle/simplewebwatcher
-``
+```
 
 ## Update
 ```bash
