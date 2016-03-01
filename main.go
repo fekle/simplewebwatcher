@@ -233,8 +233,8 @@ func doCheck(safeConfig *config.ThreadSafeConfigWrapper, pos int, wg *sync.WaitG
 		log.Println(err)
 
 		moptions := mack.AlertOptions{
-			Title:         "CIS Notifier",
-			Message:       "Site Error for " + siteConfig.Description + ": " + err.Error(),
+			Title:         siteConfig.Description,
+			Message:       "simplewebwatcher had a problem checking " + siteConfig.URL + ":\n" + err.Error(),
 			Style:         "informational",
 			Buttons:       "Open",
 			DefaultButton: "Open",
@@ -274,8 +274,8 @@ func doCheck(safeConfig *config.ThreadSafeConfigWrapper, pos int, wg *sync.WaitG
 
 		// set options for alert, and execute it - OSX ONLY
 		moptions := mack.AlertOptions{
-			Title:         "CIS Notifier",
-			Message:       "Change detected for " + siteConfig.Description,
+			Title:         siteConfig.Description,
+			Message:       "simplewebwatcher noticed a change on " + siteConfig.URL,
 			Style:         "informational",
 			Buttons:       "Open",
 			DefaultButton: "Open",
