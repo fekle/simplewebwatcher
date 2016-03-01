@@ -22,15 +22,15 @@ Run `launchctl load ~/Library/LaunchAgents/simplewebwatcher.plist` to load the s
 ## Configuration Sample
 
 ```toml
-// Site Block, can be repeated for configuring multiple pages
+# Site Block, can be repeated for configuring multiple pages
 [[Site]]
-  Description = "First" // Description used in popup and log
-  URL = "http://localhost" // Url scheme:   http[s]://example.com[:123]
-  Username = "user" // leave blank to disable http auth
-  Password = "password" // leave blank to disable http auth
-  LastCheck = 2016-03-01T19:48:40Z // don't edit - used to store time of last check
-  LastBytes = 0 // don't edit - used to store size of last check
-  LastHash = "" // don't edit - used to store hash of last check
+  Description = "First" # Description used in popup and log
+  URL = "http://localhost" # Url scheme:   http[s]://example.com[:123]
+  Username = "user" # leave blank to disable http auth
+  Password = "password" # leave blank to disable http auth
+  LastCheck = 2016-03-01T19:48:40Z # don't edit - used to store time of last check
+  LastBytes = 0 # don't edit - used to store size of last check
+  LastHash = "" # don't edit - used to store hash of last check
 
 [[Site]]
   Description = "Second"
