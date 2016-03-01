@@ -26,35 +26,12 @@ import (
 )
 
 func main() {
-	app := cli.NewApp()
-	app.Name = "simplewebwatcher"
-	app.Usage = "adsf"
-	app.Version = "0.0.1"
-
-	// flags TODO: Allow user to specify config location - what about the application directory?
-	//app.Flags = []cli.Flag{
-	//	cli.StringFlag{
-	//		Name:  "config, c",
-	//		Value: "",
-	//	},
-	//}
-
-	// commands TODO: add daemon mode?
-	app.Commands = []cli.Command{
-		{
-			// mode to use for cronjobs
-			Name:  "cron",
-			Usage: "query all pages once, then quit",
-			Action: func(c *cli.Context) {
-				log.Println(start())
-			},
-		},
+	if err := app(); err != nil {
+		log.Fatal(err)
 	}
-
-	app.Run(os.Args)
 }
 
-func start() error {
+func app() error {
 
 	// set max procs to cpu count though only needed for go versions < 1.5
 	runtime.GOMAXPROCS(runtime.NumCPU())
@@ -165,39 +142,68 @@ func start() error {
 		safeConfig.Set(*tmpConfig)
 	}
 
-	// create sync waitgroup
-	waitGroup := new(sync.WaitGroup)
+	app := cli.NewApp()
+	app.Name = "simplewebwatcher"
+	app.Usage = "adsf"
+	app.Version = "0.0.1"
 
-	// iterate through configured sites and spawn a gouroutine for each one
-	for i := range safeConfig.Get().Site {
-		waitGroup.Add(1)
-		go doCheck(safeConfig, i, waitGroup, homePath)
+	// flags TODO: Allow user to specify config location - what about the application directory?
+	//app.Flags = []cli.Flag{
+	//	cli.StringFlag{
+	//		Name:  "config, c",
+	//		Value: "",
+	//	},
+	//}
+
+	// commands TODO: add daemon mode?
+	app.Commands = []cli.Command{
+		{
+			// mode to use for cronjobs
+			Name:  "cron",
+			Usage: "query all pages once, then quit",
+			Action: func(c *cli.Context) {
+
+				if err := func() error {
+					// create sync waitgroup
+					waitGroup := new(sync.WaitGroup)
+
+					// iterate through configured sites and spawn a gouroutine for each one
+					for i := range safeConfig.Get().Site {
+						waitGroup.Add(1)
+						go doCheck(safeConfig, i, waitGroup, homePath)
+					}
+
+					// wait for all checks to finish
+					waitGroup.Wait()
+
+					// write new configuration
+					{
+
+						configFile, err := os.OpenFile(configPath, os.O_RDWR, 0700)
+						defer configFile.Close()
+						if err != nil {
+							return err
+						}
+
+						newConf := safeConfig.Get()
+
+						log.Println("updating config file")
+
+						if err := config.WriteConfig(&newConf, configFile); err != nil {
+							return err
+						}
+
+					}
+
+					return nil
+				}(); err != nil {
+					log.Fatalln("ERROR:", err)
+				}
+			},
+		},
 	}
 
-	// wait for all checks to finish
-	waitGroup.Wait()
-
-	// write new configuration
-	{
-
-		configFile, err := os.OpenFile(configPath, os.O_RDWR, 0700)
-		defer configFile.Close()
-		if err != nil {
-			return err
-		}
-
-		newConf := safeConfig.Get()
-
-		log.Println("updating config file")
-
-		if err := config.WriteConfig(&newConf, configFile); err != nil {
-			return err
-		}
-
-	}
-
-	return nil
-
+	return app.Run(os.Args)
 }
 
 func doCheck(safeConfig *config.ThreadSafeConfigWrapper, pos int, wg *sync.WaitGroup, dir string) {
